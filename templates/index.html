@@ -1,0 +1,78 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Assignment Submission Portal</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f1f5f9;
+            padding: 30px;
+        }
+        .container {
+            max-width: 750px;
+            margin: auto;
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+        }
+        h1 { color: #1e40af; }
+        input, button {
+            width: 100%;
+            padding: 12px;
+            margin: 8px 0;
+            box-sizing: border-box;
+        }
+        button {
+            background: #2563eb;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        .success { color: green; }
+        .error { color: red; }
+        .submission {
+            background: #f8fafc;
+            padding: 12px;
+            margin-top: 10px;
+            border-radius: 6px;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>Assignment Submission Portal</h1>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for category, message in messages %}
+            <p class="{{ category }}">{{ message }}</p>
+        {% endfor %}
+    {% endwith %}
+
+    <form method="POST" novalidate>
+        <input name="name" placeholder="Student Name">
+        <input name="reg_no" placeholder="Registration Number">
+        <input name="title" placeholder="Assignment Title">
+        <input name="url" placeholder="Submission URL">
+        <button type="submit">Submit Assignment</button>
+    </form>
+
+    <h2>Saved Submissions</h2>
+
+    {% for s in submissions %}
+    <div class="submission">
+        <strong>{{ s.name }}</strong>
+        <p>Registration: {{ s.reg_no }}</p>
+        <p>Assignment: {{ s.title }}</p>
+        <a href="{{ s.url }}" target="_blank" rel="noopener noreferrer">
+            View Submission
+        </a>
+    </div>
+    {% else %}
+        <p>No submissions yet.</p>
+    {% endfor %}
+</div>
+</body>
+</html>

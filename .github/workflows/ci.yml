@@ -1,0 +1,89 @@
+name: DevOps CI Pipeline
+
+on:
+  push:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: [self-hosted, Windows]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        shell: powershell
+        run: |
+          python -m pip install -r requirements.txt
+
+      - name: Run automated tests
+        id: tests
+        shell: powershell
+        continue-on-error: true
+        run: |
+          python -m pytest tests/ -v --json-report --json-report-file=pytest-results.json
+          if ($LASTEXITCODE -ne 0) {
+            exit 1
+          }
+
+      - name: Generate JSON report
+        if: always()
+        shell: powershell
+        run: |
+          python generate_report.py
+
+      - name: Send report to localhost
+        if: always()
+        shell: powershell
+        env:
+          REPORT_TOKEN: ${{ secrets.REPORT_TOKEN }}
+        run: |
+          python send_report.py
+
+      - name: Email report (bonus)
+        if: always()
+        continue-on-error: true
+        shell: powershell
+        env:
+          SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+          REPORT_EMAIL_TO: ${{ secrets.REPORT_EMAIL_TO }}
+        run: |
+          python send_email.py
+
+      - name: Enforce test result
+        if: always()
+        shell: powershell
+        env:
+          TEST_OUTCOME: ${{ steps.tests.outcome }}
+        run: |
+          if ($env:TEST_OUTCOME -ne "success") {
+            Write-Error "Automated tests failed"
+            exit 1
+          }
+
+  # Bonus: runs only when every step of "test" succeeded, and only on main.
+  # A failing run skips this job, so the previously published site stays as is.
+  deploy:
+    needs: test
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+      - id: deployment
+        uses: actions/deploy-pages@v4

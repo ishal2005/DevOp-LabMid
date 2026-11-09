@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Assignment Submission Portal - Demo</title>
+<style>
+ body{font-family:Arial,sans-serif;background:#f1f5f9;padding:30px}
+ .container{max-width:750px;margin:auto;background:#fff;padding:30px;border-radius:12px}
+ h1{color:#1e40af} input,button{width:100%;padding:12px;margin:8px 0;box-sizing:border-box}
+ button{background:#2563eb;color:#fff;border:none;cursor:pointer}
+ .success{color:green}.error{color:red}
+ .submission{background:#f8fafc;padding:12px;margin-top:10px;border-radius:6px}
+ .note{font-size:13px;color:#475569}
+</style>
+</head>
+<body>
+<div class="container">
+ <h1>Assignment Submission Portal</h1>
+ <p class="note">Static demo: submissions are validated in the browser and stored in localStorage only. The Flask backend is not hosted on GitHub Pages.</p>
+ <p id="msg"></p>
+ <form id="f" novalidate>
+  <input name="name" placeholder="Student Name">
+  <input name="reg_no" placeholder="Registration Number">
+  <input name="title" placeholder="Assignment Title">
+  <input name="url" placeholder="Submission URL">
+  <button type="submit">Submit Assignment</button>
+ </form>
+ <h2>Saved Submissions</h2>
+ <div id="list"></div>
+</div>
+<script>
+const KEY="submissions";
+const load=()=>{try{return JSON.parse(localStorage.getItem(KEY)||"[]")}catch(e){return mem}};
+let mem=[];
+const save=a=>{mem=a;try{localStorage.setItem(KEY,JSON.stringify(a))}catch(e){}};
+function validUrl(u){try{const x=new URL(u);return ["http:","https:"].includes(x.protocol)&&x.hostname.includes(".")&&!/\s/.test(u)}catch(e){return false}}
+function say(t,c){const m=document.getElementById("msg");m.textContent=t;m.className=c}
+function render(){
+ const l=document.getElementById("list");l.textContent="";
+ const a=load().slice().reverse();
+ if(!a.length){l.textContent="No submissions yet.";return}
+ a.forEach(s=>{const d=document.createElement("div");d.className="submission";
+  const b=document.createElement("strong");b.textContent=s.name;
+  const r=document.createElement("p");r.textContent="Registration: "+s.reg_no;
+  const t=document.createElement("p");t.textContent="Assignment: "+s.title;
+  const k=document.createElement("a");k.href=s.url;k.target="_blank";k.rel="noopener noreferrer";k.textContent="View Submission";
+  d.append(b,r,t,k);l.append(d)})
+}
+document.getElementById("f").addEventListener("submit",e=>{
+ e.preventDefault();
+ const v=Object.fromEntries(new FormData(e.target));
+ for(const k in v)v[k]=v[k].trim();
+ if(!(v.name&&v.reg_no&&v.title&&v.url))return say("All fields are required!","error");
+ if(!validUrl(v.url))return say("Invalid submission URL!","error");
+ save(load().concat([v]));say("Assignment submitted successfully!","success");e.target.reset();render();
+});
+render();
+</script>
+</body>
+</html>
